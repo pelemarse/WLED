@@ -306,7 +306,7 @@ uint16_t mode_wipe_up_loop(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_WIPE_UP_LOOP[] PROGMEM = "Wipe Up@!,!;!,!;!";
+static const char _data_FX_MODE_WIPE_UP_LOOP[] PROGMEM = "Wipe Up Loop@!,!;!,!;!";
 
 
 // Wipe up effect - fills LEDs one after another, then stays filled
