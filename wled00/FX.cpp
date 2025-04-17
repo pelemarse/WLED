@@ -280,6 +280,35 @@ uint16_t mode_color_wipe_random(void) {
 static const char _data_FX_MODE_COLOR_WIPE_RANDOM[] PROGMEM = "Wipe Random@!;;!";
 
 
+// Wipe up effect - fills LEDs one after another, then clears all and starts over
+uint16_t mode_wipe_up_loop(void) {
+  if (SEGLEN <= 1) return mode_static();
+  uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
+  uint32_t perc = strip.now % cycleTime;
+  unsigned prog = (perc * 65535) / cycleTime;
+  bool back = false; // We don't go back, only forward and reset
+
+  // Map progress to pixel position
+  unsigned fill = (prog * SEGLEN) / 32768;
+
+  // If we've reached the end, wait a moment (same time for last pixel)
+  if (fill >= SEGLEN) return FRAMETIME;
+
+  for (unsigned i = 0; i < SEGLEN; i++) {
+    uint32_t col;
+    if (i <= fill) {
+      col = SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0);
+    } else {
+      col = SEGCOLOR(1);
+    }
+    SEGMENT.setPixelColor(i, col);
+  }
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_WIPE_UP_LOOP[] PROGMEM = "Wipe Up@!,!;!,!;!";
+
+
 /*
  * Random color introduced alternating from start and end of strip.
  */
@@ -1905,7 +1934,7 @@ uint16_t mode_colorwaves_pride_base(bool isPride2015) {
   unsigned msmultiplier = beatsin88_t(147, 23, 60);
 
   unsigned hue16 = sHue16;
-  unsigned hueinc16 = isPride2015 ? beatsin88_t(113, 1, 3000) : 
+  unsigned hueinc16 = isPride2015 ? beatsin88_t(113, 1, 3000) :
                                      beatsin88_t(113, 60, 300) * SEGMENT.intensity * 10 / 255;
 
   sPseudotime += duration * msmultiplier;
@@ -4086,7 +4115,7 @@ uint16_t mode_sunrise() {
 
   for (unsigned i = 0; i <= SEGLEN/2; i++)
   {
-    //default palette is Fire    
+    //default palette is Fire
     unsigned wave = triwave16((i * stage) / SEGLEN);
     wave = (wave >> 8) + ((wave * SEGMENT.intensity) >> 15);
     uint32_t c;
@@ -5053,11 +5082,11 @@ uint16_t mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline
   unsigned yscale = SEGMENT.speed*8;
   unsigned indexx = 0;
 
-  CRGBPalette16 pal = SEGMENT.check1 ? SEGPALETTE : SEGMENT.loadPalette(pal, 35);  
+  CRGBPalette16 pal = SEGMENT.check1 ? SEGPALETTE : SEGMENT.loadPalette(pal, 35);
   for (int j=0; j < cols; j++) {
     for (int i=0; i < rows; i++) {
       indexx = perlin8(j*yscale*rows/255, i*xscale+strip.now/4);                                               // We're moving along our Perlin map.
-      SEGMENT.setPixelColorXY(j, i, ColorFromPalette(pal, min(i*indexx/11, 225U), i*255/rows, LINEARBLEND));   // With that value, look up the 8 bit colour palette value and assign it to the current LED.    
+      SEGMENT.setPixelColorXY(j, i, ColorFromPalette(pal, min(i*indexx/11, 225U), i*255/rows, LINEARBLEND));   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     } // for i
   } // for j
 
@@ -5106,7 +5135,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
   if (!SEGENV.allocateData(dataSize + sizeof(uint16_t)*crcBufferLen)) return mode_static(); //allocation failed
   CRGB *prevLeds = reinterpret_cast<CRGB*>(SEGENV.data);
-  uint16_t *crcBuffer = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize); 
+  uint16_t *crcBuffer = reinterpret_cast<uint16_t*>(SEGENV.data + dataSize);
 
   CRGB backgroundColor = SEGCOLOR(1);
 
@@ -6225,7 +6254,7 @@ uint16_t mode_2Dplasmarotozoom() {
   float *a = reinterpret_cast<float*>(SEGENV.data);
   byte *plasma = reinterpret_cast<byte*>(SEGENV.data+sizeof(float));
 
-  unsigned ms = strip.now/15;  
+  unsigned ms = strip.now/15;
 
   // plasma
   for (int j = 0; j < rows; j++) {
@@ -6463,7 +6492,7 @@ uint16_t mode_gravcenter_base(unsigned mode) {
   if(mode == 2) offset = 0;  // Gravimeter
   if (tempsamp >= gravcen->topLED) gravcen->topLED = tempsamp-offset;
   else if (gravcen->gravityCounter % gravity == 0) gravcen->topLED--;
-  
+
   if(mode == 1) {  //Gravcentric
     for (int i=0; i<tempsamp; i++) {
       uint8_t index = segmentSampleAvg*24+strip.now/200;
@@ -6507,7 +6536,7 @@ uint16_t mode_gravcenter_base(unsigned mode) {
       SEGMENT.setPixelColor(gravcen->topLED+SEGLEN/2, SEGMENT.color_from_palette(strip.now, false, PALETTE_SOLID_WRAP, 0));
       SEGMENT.setPixelColor(SEGLEN/2-1-gravcen->topLED, SEGMENT.color_from_palette(strip.now, false, PALETTE_SOLID_WRAP, 0));
     }
-  } 
+  }
   gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
 
   return FRAMETIME;
@@ -6785,28 +6814,28 @@ uint16_t mode_puddles_base(bool peakdetect) {
       if (pos+size>= SEGLEN) size = SEGLEN - pos;
     }
   }
-  else {                                                    // puddles  
+  else {                                                    // puddles
     if (volumeRaw > 1) {
       size = volumeRaw * SEGMENT.intensity /256 /8 + 1;     // Determine size of the flash based on the volume.
       if (pos+size >= SEGLEN) size = SEGLEN - pos;
-    } 
+    }
   }
-  
+
   for (unsigned i=0; i<size; i++) {                          // Flash the LED's.
     SEGMENT.setPixelColor(pos+i, SEGMENT.color_from_palette(strip.now, false, PALETTE_SOLID_WRAP, 0));
   }
 
   return FRAMETIME;
-} 
+}
 
 uint16_t mode_puddlepeak(void) {                // Puddlepeak. By Andrew Tuline.
   return mode_puddles_base(true);
-} 
+}
 static const char _data_FX_MODE_PUDDLEPEAK[] PROGMEM = "Puddlepeak@Fade rate,Puddle size,Select bin,Volume (min);!,!;!;1v;c2=0,m12=0,si=0"; // Pixels, Beatsin
 
 uint16_t mode_puddles(void) {                   // Puddles. By Andrew Tuline.
   return mode_puddles_base(false);
-} 
+}
 static const char _data_FX_MODE_PUDDLES[] PROGMEM = "Puddles@Fade rate,Puddle size;!,!;!;1v;m12=0,si=0"; // Pixels, Beatsin
 
 
@@ -7434,7 +7463,7 @@ uint16_t mode_2Ddistortionwaves() {
   unsigned cy1 = beatsin8_t(15-speed,0,rows-1)*scale;
   unsigned cx2 = beatsin8_t(17-speed,0,cols-1)*scale;
   unsigned cy2 = beatsin8_t(14-speed,0,rows-1)*scale;
-  
+
   unsigned xoffs = 0;
   for (int x = 0; x < cols; x++) {
     xoffs += scale;
@@ -7443,9 +7472,9 @@ uint16_t mode_2Ddistortionwaves() {
     for (int y = 0; y < rows; y++) {
        yoffs += scale;
 
-      byte rdistort = cos8_t((cos8_t(((x<<3)+a )&255)+cos8_t(((y<<3)-a2)&255)+a3   )&255)>>1; 
-      byte gdistort = cos8_t((cos8_t(((x<<3)-a2)&255)+cos8_t(((y<<3)+a3)&255)+a+32 )&255)>>1; 
-      byte bdistort = cos8_t((cos8_t(((x<<3)+a3)&255)+cos8_t(((y<<3)-a) &255)+a2+64)&255)>>1; 
+      byte rdistort = cos8_t((cos8_t(((x<<3)+a )&255)+cos8_t(((y<<3)-a2)&255)+a3   )&255)>>1;
+      byte gdistort = cos8_t((cos8_t(((x<<3)-a2)&255)+cos8_t(((y<<3)+a3)&255)+a+32 )&255)>>1;
+      byte bdistort = cos8_t((cos8_t(((x<<3)+a3)&255)+cos8_t(((y<<3)-a) &255)+a2+64)&255)>>1;
 
       byte valueR = rdistort+ w*  (a- ( ((xoffs - cx)  * (xoffs - cx)  + (yoffs - cy)  * (yoffs - cy))>>7  ));
       byte valueG = gdistort+ w*  (a2-( ((xoffs - cx1) * (xoffs - cx1) + (yoffs - cy1) * (yoffs - cy1))>>7 ));
@@ -7455,7 +7484,7 @@ uint16_t mode_2Ddistortionwaves() {
       valueG = gamma8(cos8_t(valueG));
       valueB = gamma8(cos8_t(valueB));
 
-      SEGMENT.setPixelColorXY(x, y, RGBW32(valueR, valueG, valueB, 0)); 
+      SEGMENT.setPixelColorXY(x, y, RGBW32(valueR, valueG, valueB, 0));
     }
   }
 
@@ -10454,6 +10483,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_BREATH, &mode_breath, _data_FX_MODE_BREATH);
   addEffect(FX_MODE_COLOR_WIPE, &mode_color_wipe, _data_FX_MODE_COLOR_WIPE);
   addEffect(FX_MODE_COLOR_WIPE_RANDOM, &mode_color_wipe_random, _data_FX_MODE_COLOR_WIPE_RANDOM);
+  addEffect(FX_MODE_WIPE_UP_LOOP, &mode_wipe_up_loop, _data_FX_MODE_WIPE_UP_LOOP);
   addEffect(FX_MODE_RANDOM_COLOR, &mode_random_color, _data_FX_MODE_RANDOM_COLOR);
   addEffect(FX_MODE_COLOR_SWEEP, &mode_color_sweep, _data_FX_MODE_COLOR_SWEEP);
   addEffect(FX_MODE_DYNAMIC, &mode_dynamic, _data_FX_MODE_DYNAMIC);
@@ -10523,7 +10553,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_COLORTWINKLE, &mode_colortwinkle, _data_FX_MODE_COLORTWINKLE);
   addEffect(FX_MODE_LAKE, &mode_lake, _data_FX_MODE_LAKE);
   addEffect(FX_MODE_METEOR, &mode_meteor, _data_FX_MODE_METEOR);
-  //addEffect(FX_MODE_METEOR_SMOOTH, &mode_meteor_smooth, _data_FX_MODE_METEOR_SMOOTH); // merged with mode_meteor 
+  //addEffect(FX_MODE_METEOR_SMOOTH, &mode_meteor_smooth, _data_FX_MODE_METEOR_SMOOTH); // merged with mode_meteor
   addEffect(FX_MODE_RAILWAY, &mode_railway, _data_FX_MODE_RAILWAY);
   addEffect(FX_MODE_RIPPLE, &mode_ripple, _data_FX_MODE_RIPPLE);
   addEffect(FX_MODE_TWINKLEFOX, &mode_twinklefox, _data_FX_MODE_TWINKLEFOX);
@@ -10535,7 +10565,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_SPOTS_FADE, &mode_spots_fade, _data_FX_MODE_SPOTS_FADE);
   addEffect(FX_MODE_COMET, &mode_comet, _data_FX_MODE_COMET);
   #ifdef WLED_PS_DONT_REPLACE_FX
-  addEffect(FX_MODE_MULTI_COMET, &mode_multi_comet, _data_FX_MODE_MULTI_COMET);  
+  addEffect(FX_MODE_MULTI_COMET, &mode_multi_comet, _data_FX_MODE_MULTI_COMET);
   addEffect(FX_MODE_ROLLINGBALLS, &rolling_balls, _data_FX_MODE_ROLLINGBALLS);
   addEffect(FX_MODE_SPARKLE, &mode_sparkle, _data_FX_MODE_SPARKLE);
   addEffect(FX_MODE_GLITTER, &mode_glitter, _data_FX_MODE_GLITTER);
@@ -10565,7 +10595,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_SINEWAVE, &mode_sinewave, _data_FX_MODE_SINEWAVE);
   addEffect(FX_MODE_PHASEDNOISE, &mode_phased_noise, _data_FX_MODE_PHASEDNOISE);
   addEffect(FX_MODE_FLOW, &mode_flow, _data_FX_MODE_FLOW);
-  addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);  
+  addEffect(FX_MODE_CHUNCHUN, &mode_chunchun, _data_FX_MODE_CHUNCHUN);
   addEffect(FX_MODE_WASHING_MACHINE, &mode_washing_machine, _data_FX_MODE_WASHING_MACHINE);
   addEffect(FX_MODE_BLENDS, &mode_blends, _data_FX_MODE_BLENDS);
   addEffect(FX_MODE_TV_SIMULATOR, &mode_tv_simulator, _data_FX_MODE_TV_SIMULATOR);

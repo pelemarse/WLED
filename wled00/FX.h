@@ -55,7 +55,7 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
 #define FRAMETIME_FIXED  (1000/WLED_FPS)
 #define FRAMETIME        strip.getFrameTime()
 #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S2)
-  #define MIN_FRAME_DELAY  2                                              // minimum wait between repaints, to keep other functions like WiFi alive 
+  #define MIN_FRAME_DELAY  2                                              // minimum wait between repaints, to keep other functions like WiFi alive
 #elif defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
   #define MIN_FRAME_DELAY  3                                              // S2/C3 are slower than normal esp32, and only have one core
 #else
@@ -353,7 +353,8 @@ extern byte realtimeMode;           // used in getMappedPixelIndex()
 #define FX_MODE_PS1DSONICSTREAM        214
 #define FX_MODE_PS1DSONICBOOM          215
 #define FX_MODE_PS1DSPRINGY            216
-#define MODE_COUNT                     217
+#define FX_MODE_WIPE_UP_LOOP           217
+#define MODE_COUNT                     218
 
 
 #define BLEND_STYLE_FADE            0x00  // universal
