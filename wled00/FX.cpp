@@ -339,6 +339,38 @@ uint16_t mode_wipe_up_once(void) {
 }
 static const char _data_FX_MODE_WIPE_UP_ONCE[] PROGMEM = "Wipe Up Once@!,!;!,!;!";
 
+
+// Wipe down effect - starts with all LEDs on, then turns them off one by one from right to left
+uint16_t mode_wipe_down_once(void) {
+  if (SEGLEN <= 1) return mode_static();
+
+  uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
+  uint32_t perc = strip.now % cycleTime;
+  unsigned prog = (perc * 65535) / cycleTime;
+
+  // Map progress to pixel position
+  unsigned fill = SEGLEN - ((prog * SEGLEN) / 32768);
+
+  // If we've reached the end (all LEDs off), keep them off
+  if (fill <= 0) {
+    SEGMENT.fill(SEGCOLOR(1));
+    return FRAMETIME;
+  }
+
+  // Fill pixels progressively, turning them off from right to left
+  for (unsigned i = 0; i < SEGLEN; i++) {
+    if (i < fill) {
+      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+    } else {
+      SEGMENT.setPixelColor(i, SEGCOLOR(1));
+    }
+  }
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_WIPE_DOWN_ONCE[] PROGMEM = "Wipe Down Once@!,!;!,!;!";
+
+
 /*
  * Random color introduced alternating from start and end of strip.
  */
@@ -10515,6 +10547,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_COLOR_WIPE_RANDOM, &mode_color_wipe_random, _data_FX_MODE_COLOR_WIPE_RANDOM);
   addEffect(FX_MODE_WIPE_UP_LOOP, &mode_wipe_up_loop, _data_FX_MODE_WIPE_UP_LOOP);
   addEffect(FX_MODE_WIPE_UP_ONCE, &mode_wipe_up_once, _data_FX_MODE_WIPE_UP_ONCE);
+  addEffect(FX_MODE_WIPE_DOWN_ONCE, &mode_wipe_DOWN_once, _data_FX_MODE_WIPE_DOWN_ONCE);
   addEffect(FX_MODE_RANDOM_COLOR, &mode_random_color, _data_FX_MODE_RANDOM_COLOR);
   addEffect(FX_MODE_COLOR_SWEEP, &mode_color_sweep, _data_FX_MODE_COLOR_SWEEP);
   addEffect(FX_MODE_DYNAMIC, &mode_dynamic, _data_FX_MODE_DYNAMIC);
