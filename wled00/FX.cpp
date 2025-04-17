@@ -10547,7 +10547,7 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_COLOR_WIPE_RANDOM, &mode_color_wipe_random, _data_FX_MODE_COLOR_WIPE_RANDOM);
   addEffect(FX_MODE_WIPE_UP_LOOP, &mode_wipe_up_loop, _data_FX_MODE_WIPE_UP_LOOP);
   addEffect(FX_MODE_WIPE_UP_ONCE, &mode_wipe_up_once, _data_FX_MODE_WIPE_UP_ONCE);
-  addEffect(FX_MODE_WIPE_DOWN_ONCE, &mode_wipe_DOWN_once, _data_FX_MODE_WIPE_DOWN_ONCE);
+  addEffect(FX_MODE_WIPE_DOWN_ONCE, &mode_wipe_down_once, _data_FX_MODE_WIPE_DOWN_ONCE);
   addEffect(FX_MODE_RANDOM_COLOR, &mode_random_color, _data_FX_MODE_RANDOM_COLOR);
   addEffect(FX_MODE_COLOR_SWEEP, &mode_color_sweep, _data_FX_MODE_COLOR_SWEEP);
   addEffect(FX_MODE_DYNAMIC, &mode_dynamic, _data_FX_MODE_DYNAMIC);
