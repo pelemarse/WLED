@@ -280,61 +280,42 @@ uint16_t mode_color_wipe_random(void) {
 static const char _data_FX_MODE_COLOR_WIPE_RANDOM[] PROGMEM = "Wipe Random@!;;!";
 
 
-// Wipe up effect - fills LEDs one after another, then clears all and starts over
-uint16_t mode_wipe_up_loop(void) {
-  if (SEGLEN <= 1) return mode_static();
-  uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
-  uint32_t perc = strip.now % cycleTime;
-  unsigned prog = (perc * 65535) / cycleTime;
-  bool back = false; // We don't go back, only forward and reset
-
-  // Map progress to pixel position
-  unsigned fill = (prog * SEGLEN) / 32768;
-
-  // If we've reached the end, wait a moment (same time for last pixel)
-  if (fill >= SEGLEN) return FRAMETIME;
-
-  for (unsigned i = 0; i < SEGLEN; i++) {
-    uint32_t col;
-    if (i <= fill) {
-      col = SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0);
-    } else {
-      col = SEGCOLOR(1);
-    }
-    SEGMENT.setPixelColor(i, col);
-  }
-
-  return FRAMETIME;
-}
-static const char _data_FX_MODE_WIPE_UP_LOOP[] PROGMEM = "Wipe Up Loop@!,!;!,!;!";
-
-
 // Wipe up effect - fills LEDs one after another, then stays filled
 uint16_t mode_wipe_up_once(void) {
   if (SEGLEN <= 1) return mode_static();
 
   uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
-  uint32_t perc = strip.now % cycleTime;
-  unsigned prog = (perc * 65535) / cycleTime;
 
-  // Map progress to pixel position
-  unsigned fill = (prog * SEGLEN) / 32768;
-
-  // If we've reached the end, keep all pixels filled
-  if (fill >= SEGLEN) {
-    SEGMENT.fill(SEGMENT.color_from_palette(0, true, PALETTE_SOLID_WRAP, 0));
-    return FRAMETIME;
+  // Tikriname, ar tai pirmas efekto paleidimas
+  if (SEGENV.aux0 == 0) {
+    SEGENV.aux0 = 1;          // Pažymime, kad efektas jau paleistas
+    SEGENV.step = strip.now;  // Išsaugome pradžios laiką
   }
 
-  // Fill pixels progressively
-  for (unsigned i = 0; i < SEGLEN; i++) {
-    if (i <= fill) {
+  uint32_t elapsed = strip.now - SEGENV.step;
+
+  // Jei animacija jau baigėsi
+  if (elapsed >= cycleTime) {
+    // Nustatome visus pikselius į galinę spalvą
+    for (unsigned i = 0; i < SEGLEN; i++) {
       SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-    } else {
-      SEGMENT.setPixelColor(i, SEGCOLOR(1));
+    }
+  }
+  // Jei animacija dar vyksta
+  else {
+    uint32_t prog = (elapsed * 65535) / cycleTime;
+    unsigned fill = (prog * SEGLEN) / 65535;
+
+    for (unsigned i = 0; i < SEGLEN; i++) {
+      if (i <= fill) {
+        SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+      } else {
+        SEGMENT.setPixelColor(i, SEGCOLOR(1));
+      }
     }
   }
 
+  // Visada grąžiname FRAMETIME, kad WLED žinotų, kad efektas aktyvus
   return FRAMETIME;
 }
 static const char _data_FX_MODE_WIPE_UP_ONCE[] PROGMEM = "Wipe Up Once@!,!;!,!;!";
@@ -345,27 +326,37 @@ uint16_t mode_wipe_down_once(void) {
   if (SEGLEN <= 1) return mode_static();
 
   uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
-  uint32_t perc = strip.now % cycleTime;
-  unsigned prog = (perc * 65535) / cycleTime;
 
-  // Map progress to pixel position
-  unsigned fill = SEGLEN - ((prog * SEGLEN) / 32768);
-
-  // If we've reached the end (all LEDs off), keep them off
-  if (fill <= 0) {
-    SEGMENT.fill(SEGCOLOR(1));
-    return FRAMETIME;
+  // Tikriname, ar tai pirmas efekto paleidimas
+  if (SEGENV.aux0 == 0) {
+    SEGENV.aux0 = 1;          // Pažymime, kad efektas jau paleistas
+    SEGENV.step = strip.now;  // Išsaugome pradžios laiką
   }
 
-  // Fill pixels progressively, turning them off from right to left
-  for (unsigned i = 0; i < SEGLEN; i++) {
-    if (i < fill) {
-      SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-    } else {
+  uint32_t elapsed = strip.now - SEGENV.step;
+
+  // Jei animacija jau baigėsi
+  if (elapsed >= cycleTime) {
+    // Nustatome visus pikselius į išjungtą būseną (tamsi spalva)
+    for (unsigned i = 0; i < SEGLEN; i++) {
       SEGMENT.setPixelColor(i, SEGCOLOR(1));
     }
   }
+  // Jei animacija dar vyksta
+  else {
+    uint32_t prog = (elapsed * 65535) / cycleTime;
+    unsigned unlit = (prog * SEGLEN) / 65535;
 
+    for (unsigned i = 0; i < SEGLEN; i++) {
+      if (i <= unlit) {
+        SEGMENT.setPixelColor(i, SEGCOLOR(1));  // Užgesinta spalva
+      } else {
+        SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));  // Pirminė spalva
+      }
+    }
+  }
+
+  // Visada grąžiname FRAMETIME, kad WLED žinotų, kad efektas aktyvus
   return FRAMETIME;
 }
 static const char _data_FX_MODE_WIPE_DOWN_ONCE[] PROGMEM = "Wipe Down Once@!,!;!,!;!";
@@ -10545,7 +10536,6 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_BREATH, &mode_breath, _data_FX_MODE_BREATH);
   addEffect(FX_MODE_COLOR_WIPE, &mode_color_wipe, _data_FX_MODE_COLOR_WIPE);
   addEffect(FX_MODE_COLOR_WIPE_RANDOM, &mode_color_wipe_random, _data_FX_MODE_COLOR_WIPE_RANDOM);
-  addEffect(FX_MODE_WIPE_UP_LOOP, &mode_wipe_up_loop, _data_FX_MODE_WIPE_UP_LOOP);
   addEffect(FX_MODE_WIPE_UP_ONCE, &mode_wipe_up_once, _data_FX_MODE_WIPE_UP_ONCE);
   addEffect(FX_MODE_WIPE_DOWN_ONCE, &mode_wipe_down_once, _data_FX_MODE_WIPE_DOWN_ONCE);
   addEffect(FX_MODE_RANDOM_COLOR, &mode_random_color, _data_FX_MODE_RANDOM_COLOR);
