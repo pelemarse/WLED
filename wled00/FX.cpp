@@ -286,22 +286,18 @@ uint16_t mode_wipe_up_once(void) {
 
   uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
 
-  // Tikriname, ar tai pirmas efekto paleidimas
   if (SEGENV.aux0 == 0) {
-    SEGENV.aux0 = 1;          // Pažymime, kad efektas jau paleistas
-    SEGENV.step = strip.now;  // Išsaugome pradžios laiką
+    SEGENV.aux0 = 1;
+    SEGENV.step = strip.now;
   }
 
   uint32_t elapsed = strip.now - SEGENV.step;
 
-  // Jei animacija jau baigėsi
   if (elapsed >= cycleTime) {
-    // Nustatome visus pikselius į galinę spalvą
     for (unsigned i = 0; i < SEGLEN; i++) {
       SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
     }
   }
-  // Jei animacija dar vyksta
   else {
     uint32_t prog = (elapsed * 65535) / cycleTime;
     unsigned fill = (prog * SEGLEN) / 65535;
@@ -314,8 +310,6 @@ uint16_t mode_wipe_up_once(void) {
       }
     }
   }
-
-  // Visada grąžiname FRAMETIME, kad WLED žinotų, kad efektas aktyvus
   return FRAMETIME;
 }
 static const char _data_FX_MODE_WIPE_UP_ONCE[] PROGMEM = "Wipe Up Once@!,!;!,!;!";
@@ -327,36 +321,30 @@ uint16_t mode_wipe_down_once(void) {
 
   uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
 
-  // Tikriname, ar tai pirmas efekto paleidimas
   if (SEGENV.aux0 == 0) {
-    SEGENV.aux0 = 1;          // Pažymime, kad efektas jau paleistas
-    SEGENV.step = strip.now;  // Išsaugome pradžios laiką
+    SEGENV.aux0 = 1;
+    SEGENV.step = strip.now;
   }
 
   uint32_t elapsed = strip.now - SEGENV.step;
 
-  // Jei animacija jau baigėsi
   if (elapsed >= cycleTime) {
-    // Nustatome visus pikselius į išjungtą būseną (tamsi spalva)
     for (unsigned i = 0; i < SEGLEN; i++) {
       SEGMENT.setPixelColor(i, SEGCOLOR(1));
     }
   }
-  // Jei animacija dar vyksta
   else {
     uint32_t prog = (elapsed * 65535) / cycleTime;
     unsigned unlit = (prog * SEGLEN) / 65535;
 
     for (unsigned i = 0; i < SEGLEN; i++) {
       if (i <= unlit) {
-        SEGMENT.setPixelColor(i, SEGCOLOR(1));  // Užgesinta spalva
+        SEGMENT.setPixelColor(i, SEGCOLOR(1));
       } else {
-        SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));  // Pirminė spalva
+        SEGMENT.setPixelColor(i, SEGMENT.color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
       }
     }
   }
-
-  // Visada grąžiname FRAMETIME, kad WLED žinotų, kad efektas aktyvus
   return FRAMETIME;
 }
 static const char _data_FX_MODE_WIPE_DOWN_ONCE[] PROGMEM = "Wipe Down Once@!,!;!,!;!";
